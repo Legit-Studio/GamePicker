@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Src.Repositories;
 
-public abstract class BaseRepository<T>(DbContext context) where T : class
+public abstract class BaseRepository<T>(ApiDbContext context) where T : class
 {
-    protected readonly DbContext _context = context;
+    protected readonly ApiDbContext _context = context;
     protected readonly DbSet<T> _dbSet = context.Set<T>();
 
     public virtual async Task<IEnumerable<T>> FindAll()

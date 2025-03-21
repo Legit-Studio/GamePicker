@@ -5,6 +5,6 @@ namespace Backend.Src.Models
         public int Id { get; set; }
         public required string Name { get; set; }
 
-        public virtual ICollection<GameTag> GameTags { get; set; } = [];
+        public virtual ICollection<Game> Games { get; set; } = [];
     }
 }

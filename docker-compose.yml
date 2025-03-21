@@ -11,6 +11,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - Steam__ApiKey=${API_KEY}
     depends_on:
       - db
     networks:
