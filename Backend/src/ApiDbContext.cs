@@ -1,7 +1,7 @@
 using Backend.Src.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Src;
+namespace Backend;
 
 public class ApiDbContext(DbContextOptions<ApiDbContext> options) : DbContext(options)
 {

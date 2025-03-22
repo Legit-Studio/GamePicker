@@ -1,5 +1,5 @@
-using Backend.Src.Configurations;
-using Backend.Src.Repositories;
+using Backend.Configurations;
+using Backend.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Src;
@@ -24,7 +24,7 @@ public static class Register
 
     private static void ConfigureConfiguration(WebApplicationBuilder builder)
     {
-        builder.Services.Configure<SteamSettings>(options => options.ApiKey = builder.Configuration["Steam__ApiKey"] ?? throw new ArgumentNullException("Steam__ApiKey is required"));
+        builder.Services.Configure<SteamSettings>(options => options.ApiKey = builder.Configuration["API_KEY"] ?? throw new ArgumentNullException("API_KEY is required"));
     }
 
     private static void ConfigureStaticFiles(WebApplicationBuilder builder)

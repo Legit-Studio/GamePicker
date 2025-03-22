@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Src.Repositories;
+namespace Backend.Repositories;
 
 public abstract class BaseRepository<T>(ApiDbContext context) where T : class
 {

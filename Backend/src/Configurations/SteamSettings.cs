@@ -1,6 +1,7 @@
-namespace Backend.Src.Configurations;
-
-public class SteamSettings
+namespace Backend.Configurations
 {
-    public required string ApiKey { get; set; }
+    public class SteamSettings
+    {
+        public string ApiKey { get; set; } = string.Empty;
+    }
 }
