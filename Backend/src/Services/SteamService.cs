@@ -30,20 +30,29 @@ public class SteamService
         _logger.LogInformation("Fetching Steam games from API with limit {Limit}", limit);
         var steamApps = await FetchSteamAppsAsync();
 
-        var gamesToStore = steamApps.Take(limit).Select(app => new Game
+        var gamesToStore = steamApps
+            .Where(app => !string.IsNullOrWhiteSpace(app.Name))
+            .Take(limit)
+            .Select(app => new Game
+            {
+                Name = app.Name!.Trim(),
+                Description = string.Empty,
+                AppId = app.Appid.ToString(),
+                ImageUrl = GenerateSteamImageUrl(app.Appid),
+                ReleaseDate = null,
+                AddedDate = DateTime.UtcNow
+            }).ToList();
+
+        if (gamesToStore.Count == 0)
         {
-            Name = app.Name ?? "Unknown",
-            Description = string.Empty,
-            AppId = app.Appid.ToString(),
-            ImageUrl = string.Empty,
-            ReleaseDate = null,
-            AddedDate = DateTime.UtcNow
-        }).ToList();
+            _logger.LogWarning("No valid Steam games found to store.");
+            return [];
+        }
 
         _logger.LogInformation("Storing {Count} new games into the database.", gamesToStore.Count);
         await _gameRepository.StoreGamesAsync(gamesToStore);
 
-        return await _gameRepository.GetLimitedGamesAsync(limit);
+        return gamesToStore;
     }
 
     private async Task<IEnumerable<SteamApp>> FetchSteamAppsAsync()
@@ -53,20 +62,31 @@ public class SteamService
             const string url = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/";
             var response = await _httpClient.GetStringAsync(url);
 
-            var steamResponse = JsonSerializer.Deserialize<SteamApiResponse>(response);
-            if (steamResponse?.Applist?.Apps == null || !steamResponse.Applist.Apps.Any())
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var steamResponse = JsonSerializer.Deserialize<SteamApiResponse>(response, options);
+
+            if (steamResponse?.Applist.Apps is not { Count: > 0 } apps)
             {
                 _logger.LogWarning("Steam API returned no apps.");
                 return [];
             }
 
-            _logger.LogInformation("Fetched {Count} apps from Steam API.", steamResponse.Applist.Apps.Count);
-            return steamResponse.Applist.Apps;
+            _logger.LogInformation("Fetched {Count} apps from Steam API.", apps.Count);
+            return apps;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch Steam apps.");
             throw;
         }
+    }
+
+    private static string GenerateSteamImageUrl(int appId)
+    {
+        return $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/header.jpg";
     }
 }

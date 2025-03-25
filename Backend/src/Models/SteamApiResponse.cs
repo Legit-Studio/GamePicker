@@ -2,16 +2,16 @@ namespace Backend.Models;
 
 public class SteamApiResponse
 {
-    public AppList Applist { get; set; }
+    public AppList Applist { get; set; } = new();
 }
 
 public class AppList
 {
-    public List<SteamApp> Apps { get; set; }
+    public List<SteamApp> Apps { get; set; } = new();
 }
 
 public class SteamApp
 {
     public int Appid { get; set; }
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }

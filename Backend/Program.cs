@@ -1,13 +1,13 @@
-using Backend;
+ using Backend;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string envFilePath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+var envFilePath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
 
 Env.Load(envFilePath);
-Console.WriteLine($"Loaded .env file from: {envFilePath}");
+Console.WriteLine($"Loaded .env file from: {Path.GetFullPath(envFilePath)}");
 
 Register.Configure(builder);
 
