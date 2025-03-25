@@ -1,5 +1,7 @@
+using Backend;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using DotNetEnv;
 
 namespace Backend;
 
@@ -7,12 +9,11 @@ public class ApiDbContextFactory : IDesignTimeDbContextFactory<ApiDbContext>
 {
     public ApiDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+        var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
+        Env.Load(envPath);
 
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            throw new InvalidOperationException("CONNECTION_STRING must be set in the .env file");
-        }
+        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
+                               ?? throw new ArgumentNullException("CONNECTION_STRING must be set in the .env file");
 
         var optionsBuilder = new DbContextOptionsBuilder<ApiDbContext>();
         optionsBuilder.UseNpgsql(connectionString);

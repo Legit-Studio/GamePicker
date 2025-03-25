@@ -4,20 +4,16 @@ using Backend.Repositories;
 
 namespace Backend.Services;
 
-public class SteamService
+public class SteamService(
+    HttpClient httpClient,
+    string apiKey,
+    ILogger<SteamService> logger,
+    GameRepository gameRepository)
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
-    private readonly ILogger<SteamService> _logger;
-    private readonly GameRepository _gameRepository;
-
-    public SteamService(HttpClient httpClient, string apiKey, ILogger<SteamService> logger, GameRepository gameRepository)
-    {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _gameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
-    }
+    private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    private readonly string _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
+    private readonly ILogger<SteamService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly GameRepository _gameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
 
     public async Task<IEnumerable<Game>> GetStoredGamesAsync(int limit)
     {
@@ -27,27 +23,35 @@ public class SteamService
 
     public async Task<IEnumerable<Game>> FetchAndStoreSteamGamesAsync(int limit)
     {
-        _logger.LogInformation("Fetching Steam games from API with limit {Limit}", limit);
+        _logger.LogInformation("Fetching Steam games from API. Desired limit: {Limit}", limit);
         var steamApps = await FetchSteamAppsAsync();
 
-        var gamesToStore = steamApps
+        SteamApp[] enumerable = steamApps as SteamApp[] ?? steamApps.ToArray();
+        _logger.LogInformation("Total apps fetched from Steam API: {Total}", enumerable.Length);
+        var validApps = enumerable
             .Where(app => !string.IsNullOrWhiteSpace(app.Name))
+            .ToList();
+
+        _logger.LogInformation("Valid apps with names: {ValidCount}", validApps.Count);
+
+        if (validApps.Count == 0)
+        {
+            _logger.LogWarning("No valid Steam games with names found to store.");
+            return [];
+        }
+
+        var gamesToStore = validApps
             .Take(limit)
             .Select(app => new Game
             {
-                Name = app.Name!.Trim(),
+                Name = app.Name?.Trim(),
                 Description = string.Empty,
                 AppId = app.Appid.ToString(),
                 ImageUrl = GenerateSteamImageUrl(app.Appid),
                 ReleaseDate = null,
                 AddedDate = DateTime.UtcNow
-            }).ToList();
-
-        if (gamesToStore.Count == 0)
-        {
-            _logger.LogWarning("No valid Steam games found to store.");
-            return [];
-        }
+            })
+            .ToList();
 
         _logger.LogInformation("Storing {Count} new games into the database.", gamesToStore.Count);
         await _gameRepository.StoreGamesAsync(gamesToStore);
@@ -62,6 +66,8 @@ public class SteamService
             const string url = "https://api.steampowered.com/ISteamApps/GetAppList/v0002/";
             var response = await _httpClient.GetStringAsync(url);
 
+            _logger.LogInformation("Steam API response received. Size: {Size} bytes", response.Length);
+
             var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -69,14 +75,10 @@ public class SteamService
 
             var steamResponse = JsonSerializer.Deserialize<SteamApiResponse>(response, options);
 
-            if (steamResponse?.Applist.Apps is not { Count: > 0 } apps)
-            {
-                _logger.LogWarning("Steam API returned no apps.");
-                return [];
-            }
+            if (steamResponse?.Applist?.Apps is { Count: > 0 } apps) return apps;
+            _logger.LogWarning("Steam API returned no apps or empty list.");
+            return [];
 
-            _logger.LogInformation("Fetched {Count} apps from Steam API.", apps.Count);
-            return apps;
         }
         catch (Exception ex)
         {

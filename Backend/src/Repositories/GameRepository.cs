@@ -7,7 +7,7 @@ public class GameRepository(ApiDbContext context) : BaseRepository<Game>(context
 {
     public async Task<IEnumerable<Game>> GetLimitedGamesAsync(int limit)
     {
-        return await _dbSet
+        return await DbSet
             .OrderBy(g => g.Id)
             .Take(limit)
             .ToListAsync();
@@ -15,14 +15,21 @@ public class GameRepository(ApiDbContext context) : BaseRepository<Game>(context
 
     public async Task StoreGamesAsync(IEnumerable<Game> games)
     {
+        var newGames = new List<Game>();
+
         foreach (var game in games)
         {
-            var exists = await _dbSet.AnyAsync(g => g.AppId == game.AppId);
+            var exists = await DbSet.AnyAsync(g => g.AppId == game.AppId);
             if (!exists)
             {
-                await _dbSet.AddAsync(game);
+                newGames.Add(game);
             }
         }
-        await _context.SaveChangesAsync();
+
+        if (newGames.Count > 0)
+        {
+            await DbSet.AddRangeAsync(newGames);
+            await Context.SaveChangesAsync();
+        }
     }
 }

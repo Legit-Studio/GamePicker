@@ -4,38 +4,41 @@ namespace Backend.Repositories;
 
 public abstract class BaseRepository<T>(ApiDbContext context) where T : class
 {
-    protected readonly ApiDbContext _context = context;
-    protected readonly DbSet<T> _dbSet = context.Set<T>();
+    protected readonly ApiDbContext Context = context;
+    protected readonly DbSet<T> DbSet = context.Set<T>();
 
-    public virtual async Task<IEnumerable<T>> FindAll()
+    public virtual async Task<IEnumerable<T>> FindAllAsync()
     {
-        return await _dbSet.ToListAsync();
+        return await DbSet.ToListAsync();
     }
 
-    public virtual async Task<T> FindById(int id)
+    protected virtual async Task<T> FindByIdAsync(int id)
     {
-        var entity = await _dbSet.FindAsync(id) ?? throw new KeyNotFoundException($"Entity with id {id} was not found.");
+        var entity = await DbSet.FindAsync(id);
+        if (entity == null)
+            throw new KeyNotFoundException($"Entity of type {typeof(T).Name} with id {id} was not found.");
+
         return entity;
     }
 
-    public virtual async Task<T> Create(T entity)
+    public virtual async Task<T> CreateAsync(T entity)
     {
-        await _dbSet.AddAsync(entity);
-        await _context.SaveChangesAsync();
+        await DbSet.AddAsync(entity);
+        await Context.SaveChangesAsync();
         return entity;
     }
 
-    public virtual async Task<T> Update(T entity)
+    public virtual async Task<T> UpdateAsync(T entity)
     {
-        _dbSet.Update(entity);
-        await _context.SaveChangesAsync();
+        DbSet.Update(entity);
+        await Context.SaveChangesAsync();
         return entity;
     }
 
-    public virtual async Task Delete(int id)
+    public virtual async Task DeleteAsync(int id)
     {
-        var entity = await _dbSet.FindAsync(id) ?? throw new KeyNotFoundException($"Entity with id {id} was not found.");
-        _dbSet.Remove(entity);
-        await _context.SaveChangesAsync();
+        var entity = await FindByIdAsync(id);
+        DbSet.Remove(entity);
+        await Context.SaveChangesAsync();
     }
 }

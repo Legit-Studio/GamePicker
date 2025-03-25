@@ -1,23 +1,19 @@
- using Backend;
+using Backend;
 using Microsoft.EntityFrameworkCore;
-using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var envFilePath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
-
-Env.Load(envFilePath);
-Console.WriteLine($"Loaded .env file from: {Path.GetFullPath(envFilePath)}");
-
 Register.Configure(builder);
-
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+app.Lifetime.ApplicationStarted.Register(() =>
 {
+    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApiDbContext>();
+    
     dbContext.Database.Migrate();
-}
+    Console.WriteLine("Database migrations applied.");
+});
 
 app.MapControllers();
 app.UseStaticFiles();
