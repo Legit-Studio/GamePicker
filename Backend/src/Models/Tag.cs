@@ -1,4 +1,4 @@
-namespace Backend.Src.Models
+namespace Backend.Models
 {
     public class Tag
     {

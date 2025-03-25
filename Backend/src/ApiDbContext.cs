@@ -1,4 +1,4 @@
-using Backend.Src.Models;
+using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend;

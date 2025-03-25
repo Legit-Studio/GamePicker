@@ -1,36 +1,13 @@
 using Backend;
-using Backend.Src;
-using Backend.Configurations;
-using Backend.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    DotNetEnv.Env.Load();
-}
+string envFilePath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
 
-builder.Services.Configure<SteamSettings>(options =>
-{
-    options.ApiKey = Environment.GetEnvironmentVariable("API_KEY") 
-                     ?? throw new InvalidOperationException("API_KEY is missing.");
-});
-
-builder.Services.AddDbContext<ApiDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddHttpClient("SteamClient");
-
-builder.Services.AddTransient<SteamService>(sp =>
-{
-    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-    var httpClient = httpClientFactory.CreateClient("SteamClient");
-    var apiKey = sp.GetRequiredService<IOptions<SteamSettings>>().Value.ApiKey;
-    var logger = sp.GetRequiredService<ILogger<SteamService>>();
-    return new SteamService(httpClient, apiKey, logger);
-});
+Env.Load(envFilePath);
+Console.WriteLine($"Loaded .env file from: {envFilePath}");
 
 Register.Configure(builder);
 
